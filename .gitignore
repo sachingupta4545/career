@@ -1,0 +1,63 @@
+# Virtual environments
+.venv/
+venv/
+env/
+ 
+# Python caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.mypy_cache/
+.cache/
+ 
+# Build artifacts
+dist/
+build/
+*.egg-info/
+*.egg
+*.whl
+ 
+# Logs
+logs/
+*.log
+ 
+# Media/storage (generated artifacts)
+media/
+app/storage/reports/
+app/storage/logs/
+app/storage/tmp/
+ 
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+ 
+# OS junk
+.DS_Store
+Thumbs.db
+ 
+# Secrets
+.env
+.env.local
+.env.*.local
+ 
+# Database
+*.db
+*.sqlite3
+ 
+# Jupyter notebooks
+.ipynb_checkpoints
+ 
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/

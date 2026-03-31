@@ -18,7 +18,7 @@ class AuthService:
         await session.commit()
         await session.refresh(user)
 
-        profile = Portfolio(user_id=user.id, name="", bio="", avatar_url="")
+        profile = Portfolio(user_id=user.id, name="", bio="", avatar_url="", resume_url="")
         session.add(profile)
         await session.commit()
 

@@ -1,10 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.session import get_db_session
 from schemas.user import ResponseEnvelope, Token, UserCreate, UserRead
 from services.auth_service import AuthService
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -30,12 +35,12 @@ async def signup(
 
 @router.post("/login", response_model=ResponseEnvelope)
 async def login(
-    form: OAuth2PasswordRequestForm = Depends(),
+    payload: LoginRequest,
     session: AsyncSession = Depends(get_db_session),
     service: AuthService = Depends(AuthService),
 ) -> ResponseEnvelope:
     try:
-        user = await service.authenticate(session=session, email=form.username, password=form.password)
+        user = await service.authenticate(session=session, email=payload.email, password=payload.password)
         token = await service.issue_token(user)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc

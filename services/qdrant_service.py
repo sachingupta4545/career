@@ -46,6 +46,28 @@ class QdrantService:
         ]
         await client.upsert(collection_name=settings.qdrant_collection, points=points)
 
+    async def delete_by_filter(self, *, user_id: str, source: str | None = None) -> None:
+        settings = get_settings()
+        client = _get_client()
+        exists = await client.collection_exists(collection_name=settings.qdrant_collection)
+        if not exists:
+            return
+
+        conditions: list[models.FieldCondition] = [
+            models.FieldCondition(key="user_id", match=models.MatchValue(value=user_id))
+        ]
+        if source:
+            conditions.append(models.FieldCondition(key="source", match=models.MatchValue(value=source)))
+
+        await client.delete(
+            collection_name=settings.qdrant_collection,
+            points_selector=models.FilterSelector(
+                filter=models.Filter(
+                    must=conditions,
+                )
+            ),
+        )
+
     async def search(self, *, query_vector: list[float], user_id: str, top_k: int) -> list[models.ScoredPoint]:
         if not query_vector:
             return []
@@ -57,10 +79,11 @@ class QdrantService:
             must=[models.FieldCondition(key="user_id", match=models.MatchValue(value=user_id))]
         )
 
-        return await client.search(
+        response = await client.query_points(
             collection_name=settings.qdrant_collection,
-            query_vector=query_vector,
+            query=query_vector,
             limit=top_k,
             query_filter=filt,
             with_payload=True,
         )
+        return response.points

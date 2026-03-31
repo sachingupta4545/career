@@ -8,7 +8,12 @@ from db.session import get_db_session
 from models.user import User
 from schemas.portfolio import PortfolioRead, PortfolioUpdate, ProjectCreate, ProjectRead
 from schemas.user import ResponseEnvelope
+from services.embedding_service import EmbeddingService
+from services.groq_service import GroqService
+from services.pdf_service import PdfService
 from services.portfolio_service import PortfolioService
+from services.qdrant_service import QdrantService
+from services.rag_service import RagService
 from services.storage_service import StorageService
 
 router = APIRouter(prefix="/portfolios", tags=["portfolios"])
@@ -58,17 +63,36 @@ async def upload_resume(
     current_user: User = Depends(get_current_user),
     service: PortfolioService = Depends(PortfolioService),
     storage: StorageService = Depends(StorageService),
+    rag: RagService = Depends(RagService),
+    pdf: PdfService = Depends(PdfService),
+    embedder: EmbeddingService = Depends(EmbeddingService),
+    qdrant: QdrantService = Depends(QdrantService),
+    groq: GroqService = Depends(GroqService),
 ) -> ResponseEnvelope:
+    pdf.validate_upload(file)
     p = await service.upload_resume(session=session, user=current_user, file=file, storage=storage)
-    data = PortfolioRead(
-        id=p.id,
-        user_id=p.user_id,
-        name=p.name,
-        bio=p.bio,
-        avatar_url=p.avatar_url,
-        resume_url=p.resume_url,
-    ).model_dump()
-    return ResponseEnvelope(data=data, message="Resume uploaded")
+    await file.seek(0)
+    chunks = await rag.replace_resume(
+        user_id=str(current_user.id),
+        file=file,
+        pdf=pdf,
+        embedder=embedder,
+        qdrant=qdrant,
+        metadata={"filename": file.filename or "resume.pdf", "portfolio_id": str(p.id)},
+        groq=groq,
+    )
+    data = {
+        **PortfolioRead(
+            id=p.id,
+            user_id=p.user_id,
+            name=p.name,
+            bio=p.bio,
+            avatar_url=p.avatar_url,
+            resume_url=p.resume_url,
+        ).model_dump(),
+        "rag_chunks": chunks,
+    }
+    return ResponseEnvelope(data=data, message="Resume uploaded and indexed")
 
 
 @router.get("/me/projects", response_model=ResponseEnvelope)

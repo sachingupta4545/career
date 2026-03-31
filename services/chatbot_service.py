@@ -6,7 +6,6 @@ from models.project import Project
 from models.user import User
 from services.embedding_service import EmbeddingService
 from services.groq_service import GroqService
-from services.pdf_service import PdfService
 from services.qdrant_service import QdrantService
 from services.rag_service import RagService
 
@@ -59,8 +58,10 @@ class ChatbotService:
             qdrant=qdrant,
         )
         context_chunks = [r.text for r in results if r.text]
-        context = "\n\n".join(context_chunks)
+        if not context_chunks:
+            return "I could not find relevant information in the indexed resume or RAG documents.", []
 
+        context = "\n\n".join(context_chunks)
         prompt = (
             "You are an AI portfolio assistant.\n"
             "Answer based only on the provided context.\n\n"
